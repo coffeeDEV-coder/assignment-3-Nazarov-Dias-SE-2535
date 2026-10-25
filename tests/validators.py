@@ -1,15 +1,6 @@
-"""Independent semantic validators for Assignment 3.
 
-Each check_* function returns a list of error strings (empty list = valid).
-The reference code here (simple DSU, Kahn, iterative Tarjan) is deliberately
-different from the solution (Kosaraju, DFS topological sort), so a bug in the
-solution is unlikely to be repeated in the checker.
-"""
 from collections import deque, Counter
 from itertools import combinations
-
-
-# ------------------------------------------------------------ references
 def _find(p, x):
     while p[x] != x:
         p[x] = p[p[x]]
@@ -40,7 +31,6 @@ def ref_mst_cost(n, edges):
 
 
 def brute_mst_cost(n, edges):
-    """Exhaustive optimum for tiny graphs: best acyclic subset of size n-c."""
     c = ref_component_count(n, edges)
     need = n - c
     best = None
@@ -61,7 +51,6 @@ def brute_mst_cost(n, edges):
 
 
 def ref_kahn(n, edges):
-    """Return a topological order, or None when a directed cycle exists."""
     adj = [[] for _ in range(n)]
     indeg = [0] * n
     for e in edges:
@@ -80,7 +69,6 @@ def ref_kahn(n, edges):
 
 
 def ref_tarjan(n, edges):
-    """Iterative Tarjan SCC labels."""
     adj = [[] for _ in range(n)]
     for e in edges:
         adj[e[0]].append(e[1])
@@ -145,7 +133,6 @@ def ref_dag_distances(n, edges, source):
     return dist
 
 
-# --------------------------------------------------------------- checkers
 def check_dsu(req, res):
     n, ops = req["n"], req["operations"]
     if "states" not in res:
@@ -283,8 +270,6 @@ def check_dag(req, res):
         u, _, w = edges[e]
         if dist[u] is None or dist[u] + w != dist[v]:
             return ["parent edge of %d is not tight" % v]
-    # following parent edges must reach the source; memoised so the whole
-    # check is O(n) even for a chain of 100000 vertices
     reaches = [False] * n
     reaches[s] = True
     for v in range(n):

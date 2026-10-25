@@ -1,20 +1,4 @@
-"""Own test suite for Assignment 3 (Python).
 
-Run from the repository root:
-    python tests/run_tests.py
-
-What it does
-  1. Builds the test cases (hand-made, boundary, full-limit, deep chains and
-     seeded random fuzz). Every case carries a written justification.
-  2. Sends ALL cases through src/Python/main.py in ONE process, twice (second
-     pass in reverse order, with pings in between) to check state reset.
-  3. Validates every output semantically with tests/validators.py.
-  4. Checks the validators themselves: an alternative valid answer must be
-     accepted and an invalid witness must be rejected.
-  5. Calls the route helper for reachable / source / unreachable / tied cases.
-  6. Writes tests/my_cases.jsonl (inputs) and tests/results.md (inputs,
-     justification, actual outputs, verdicts, commands).
-"""
 import json
 import os
 import random
@@ -28,13 +12,13 @@ SRC = os.path.join(ROOT, "src", "Python")
 sys.path.insert(0, HERE)
 sys.path.insert(0, SRC)
 
-import validators as V  # noqa: E402
-import algorithms  # noqa: E402
+import validators as V  
+import algorithms 
 
 SEED = 20260101
 BIG = 1_000_000_000
 N_MAX, M_MAX = 100_000, 250_000
-CASES = []  # (name, request, justification)
+CASES = []  
 
 
 def add(name, request, why):
@@ -44,9 +28,6 @@ def add(name, request, why):
 def both(name, n, edges, why):
     add(name + " [kruskal]", {"task": "kruskal", "n": n, "edges": edges}, why)
     add(name + " [prim]", {"task": "prim", "n": n, "edges": edges}, why)
-
-
-# ---------------------------------------------------------------- DSU
 add("dsu: spec example", {"task": "dsu", "n": 4, "operations": [[0, 1], [1, 2], [0, 2], [3, 3]]},
     "0-1 -> 3 comps, largest 2; 1-2 -> 2 comps, largest 3; 0-2 repeated and 3-3 self-union change nothing. Expected [[3,2],[2,3],[2,3],[2,3]].")
 add("dsu: n=0", {"task": "dsu", "n": 0, "operations": []}, "Empty graph: states=[].")
@@ -61,7 +42,6 @@ add("dsu: chain n=100000 + random unions (q=250000)",
      "operations": [[i, i + 1] for i in range(N_MAX - 1)] + [[_r.randrange(N_MAX), _r.randrange(N_MAX)] for _ in range(M_MAX - N_MAX + 1)]},
     "Full limits. After the chain everything is one component of size n; later states stay [1,100000].")
 
-# --------------------------------------------------- Kruskal and Prim
 both("mst: spec example", 4, [[0, 1, 4], [1, 2, 2], [0, 2, 3]],
      "Edges 1(w2)+2(w3)=5, vertex 3 isolated -> components=2, 2 edges.")
 both("mst: n=0", 0, [], "Empty graph: cost 0, no edges, components 0.")
@@ -88,7 +68,6 @@ both("mst: random n=100000 m=250000", N_MAX, _big_mst,
 both("mst: path n=100000", N_MAX, [[i, i + 1, BIG - i] for i in range(N_MAX - 1)],
      "Deep path: every edge is forced, cost = sum(10^9-i). Tests deep structure.")
 
-# ---------------------------------------------------------------- SCC
 add("scc: spec example", {"task": "scc", "n": 4, "edges": [[0, 1], [1, 0], [1, 2], [0, 2], [2, 3]]},
     "SCCs {0,1},{2},{3}; condensation has exactly two pairs ({0,1}->{2}, {2}->{3}), the duplicate 0->2 and 1->2 collapse.")
 add("scc: n=0", {"task": "scc", "n": 0, "edges": []}, "Empty: both arrays empty.")
@@ -105,7 +84,6 @@ _r = random.Random(SEED + 2)
 add("scc: random n=100000 m=250000", {"task": "scc", "n": N_MAX, "edges": [[_r.randrange(N_MAX), _r.randrange(N_MAX)] for _ in range(M_MAX)]},
     "Full limits, seed %d+2. Checked against iterative Tarjan." % (SEED))
 
-# --------------------------------------------------------------- topo
 add("topo: spec example", {"task": "topo", "n": 4, "edges": [[0, 2], [1, 2], [2, 3]]},
     "Acyclic; any order with 0,1 before 2 before 3.")
 add("topo: n=0", {"task": "topo", "n": 0, "edges": []}, "acyclic=true, order=[].")
@@ -129,7 +107,6 @@ for _ in range(M_MAX):
 add("topo: random DAG n=100000 m=250000", {"task": "topo", "n": N_MAX, "edges": _dag_e},
     "Edges respect a hidden random permutation, so the graph is acyclic.")
 
-# ---------------------------------------------------------------- DAG
 add("dag: spec example", {"task": "dag", "n": 5, "source": 0, "edges": [[0, 1, 3], [0, 2, 8], [1, 2, -7], [2, 3, 4]]},
     "d=[0,3,-4,0,null]: 0->1->2 costs -4, then 2->3 gives 0. Vertex 4 unreachable. parent=[-1,0,2,3,-1].")
 add("dag: n=1", {"task": "dag", "n": 1, "source": 0, "edges": []}, "Only the source: distance [0], parent [-1].")
@@ -156,7 +133,6 @@ for _ in range(M_MAX):
 add("dag: random DAG n=100000 m=250000", {"task": "dag", "n": N_MAX, "source": _perm[0], "edges": _dg},
     "Full limits, source is the first vertex of the hidden order. Checked against an independent Kahn-based reference.")
 
-# ------------------------------------------------- seeded random fuzz
 _r = random.Random(SEED + 5)
 for k in range(60):
     n = _r.randint(0, 7)
@@ -172,7 +148,6 @@ for k in range(60):
         add("fuzz %d: dag" % k, {"task": "dag", "n": n, "source": _r.randrange(n), "edges": we}, "Small random digraph (may contain cycles).")
 
 
-# ------------------------------------------------------------- running
 def run_batch(requests):
     data = "".join(json.dumps(r, separators=(",", ":")) + "\n" for r in requests)
     t0 = time.perf_counter()
@@ -208,7 +183,6 @@ def main():
     failures = []
     ping = {"task": "ping"}
 
-    # one process: ping, all cases, ping, all cases reversed
     reqs = [ping] + [c[1] for c in CASES] + [ping] + [c[1] for c in reversed(CASES)] + [ping]
     outs, dt = run_batch(reqs)
     k = len(CASES)
@@ -238,7 +212,6 @@ def main():
             details.append("### %d. %s\n- Command: `python tools/run.py --input tests/my_cases.jsonl` (or `python tests/run_tests.py`)\n- Input: `%s`\n- Expected (justified): %s\n- Actual output: `%s`\n- Verdict: %s\n"
                            % (i + 1, name, describe(req), why, short(first[i]), "PASS" if ok else "FAIL " + str(e1 + e2)))
 
-    # ------------------------------------------- validators self-check
     report.append("\n## Validator self-check (alternative accepted, invalid witness rejected)\n")
     vc = []
 
@@ -289,7 +262,6 @@ def main():
         report.append("- %s: route=%s, selected edge IDs=%s, distance=%s -> %s" % (label, route, used, res["distance"][t], "OK" if not errs else "WRONG " + str(errs)))
         if errs:
             failures.append("route helper " + label + str(errs))
-    # wrong direction detection
     bad = V.check_route([3, 2, 1, 0], 0, 3, E, r["parent_edge"], r["distance"])
     report.append("- reversed route [3,2,1,0] is rejected: %s" % ("OK" if bad else "WRONG"))
     if not bad:
@@ -302,7 +274,6 @@ def main():
 
     with open(os.path.join(HERE, "results.md"), "w", encoding="utf-8") as f:
         f.write("\n".join(report) + "\n")
-    # small inputs for `python tools/run.py --input tests/my_cases.jsonl`
     with open(os.path.join(HERE, "my_cases.jsonl"), "w", encoding="utf-8") as f:
         for name, req, _ in CASES:
             if len(json.dumps(req)) < 5000 and not name.startswith("fuzz"):

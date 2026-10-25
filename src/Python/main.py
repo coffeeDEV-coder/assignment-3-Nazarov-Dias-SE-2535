@@ -1,4 +1,4 @@
-"""Use this supplied JSON Lines entry point. Implement your algorithms in algorithms.py."""
+
 
 import json
 import sys

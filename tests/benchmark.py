@@ -1,19 +1,3 @@
-"""Benchmark Kruskal vs Prim on the SAME graphs at three sizes.
-
-Run from the repository root:
-    python tests/benchmark.py
-
-Protocol (also described in ANALYSIS.md)
-  * Graphs are generated with random.Random(SEED + size_index): endpoints
-    uniform in 0..n-1, weights uniform in [-10^9, 10^9].
-  * Before timing, the costs of both methods are compared with each other and
-    with an independent reference, and both forests are validated.
-  * Timed region: ONE call of algorithms.kruskal(request) / algorithms.prim(request)
-    on an already built in-memory request. Graph generation, JSON parsing and
-    output are NOT timed (same boundary for both methods).
-  * Timer: time.perf_counter(). One untimed warm-up call per method and size,
-    then REPEATS timed runs; the median is reported. Python has no compilation step.
-"""
 import os
 import platform
 import random
@@ -26,8 +10,8 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(ROOT, "src", "Python"))
 
-import algorithms  # noqa: E402
-import validators as V  # noqa: E402
+import algorithms  
+import validators as V  
 
 SEED = 20260101
 REPEATS = 5
@@ -63,8 +47,8 @@ def main():
         for name in ("kruskal", "prim"):
             req = {"task": name, "n": n, "edges": edges}
             fn = getattr(algorithms, name)
-            _, out = timed(fn, req)                 # warm-up (untimed)
-            errs = V.check_forest(req, out)         # correctness before timing
+            _, out = timed(fn, req)               
+            errs = V.check_forest(req, out)         
             if errs:
                 raise SystemExit("%s invalid on size %d: %s" % (name, n, errs))
             results[name] = out
